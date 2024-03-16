@@ -45,6 +45,7 @@ INSTALLED_APPS = [
 
     'authentication',
     'core',
+    'product'
 ]
 
 MIDDLEWARE = [
@@ -148,21 +149,15 @@ REST_FRAMEWORK = {
     ],
 }
 
+# CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOW_METHODS = ['GET',]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
-    'http://192.168.29.78:8080'
 ]
+
 CORS_ALLOW_CREDENTIALS = True  # If you want to allow credentials (e.g., cookies) to be sent with requests
 CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
+    '*'
 ]  # List of headers allowed in CORS requests
 
 SIMPLE_JWT = {

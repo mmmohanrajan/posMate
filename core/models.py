@@ -25,7 +25,7 @@ class Expense(models.Model):
         (UPI, 'UPI'),
     ]
 
-    business = models.ForeignKey(Business, on_delete=models.CASCADE)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="expense")
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, blank=True)  # ForeignKey to User model
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     notes = models.TextField(blank=True)
