@@ -39,9 +39,20 @@ class BulkExpenseUploadAPIView(APIView):
                 amount = row.get('Expenses ($)')
 
                 if date_str:
+                    date = None
                     # Convert date string to datetime object
-                    date = datetime.strptime(date_str, '%m/%d/%Y')
-                    previous_date = date
+                    formats = ['%m/%d/%Y', '%m-%d-%Y', '%Y-%m-%d %H:%M:%S', '%y-%m-%d', '%d-%m-%Y']
+
+                    for format in formats:
+                        try:
+                            date = datetime.strptime(date_str, format)
+                            previous_date = date
+                            break  # Break the loop if parsing is successful
+                        except ValueError:
+                            pass  # Continue to the next format if parsing fails
+                    else:
+                        if date is None:
+                            print("Can't parse this date: ", date_str)
                 else:
                     date = previous_date
 
@@ -50,7 +61,7 @@ class BulkExpenseUploadAPIView(APIView):
                     expense = Expense(datetime=date, notes=description, amount=amount, business_id=business_id)
                     expenses_to_create.append(expense)
                 else:
-                    print("Skipped row", row)
+                    print("Expense: Skipped row", row)
             
             if expenses_to_create:
                 # Bulk create expenses
