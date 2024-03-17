@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-k+73*rn(&3anom9=sq21lmf^o6c-z=t+87$hz$_80v$r2=1oee
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['moonbite.pythonanywhere.com']
 
 
 # Application definition
