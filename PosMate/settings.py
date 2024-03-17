@@ -153,6 +153,7 @@ REST_FRAMEWORK = {
 # CORS_ALLOW_METHODS = ['GET',]
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
+    'https://posmate-415814.web.app'
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # If you want to allow credentials (e.g., cookies) to be sent with requests
