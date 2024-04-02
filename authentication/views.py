@@ -18,7 +18,7 @@ def user_login(request):
     if serializer.is_valid():
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
-        business = user.owned_businesses.last()
+        business = user.business
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),

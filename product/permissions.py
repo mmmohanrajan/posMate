@@ -6,14 +6,14 @@ from rest_framework.exceptions import PermissionDenied
 class CanViewProductsPermission(BasePermission):
     def has_permission(self, request, view):
         # Check if the user has permission to view products based on business_id
-        business_id = request.query_params.get('business_id')
+        business_id = request.query_params.get('business_id') or request.data.get('business')
         
         # Implement your custom logic here
         if business_id:
             # Get the business associated with the provided business_id
             try:
                 business = Business.objects.get(pk=business_id)
-            except Business.DoesNotExist:
+            except Exception:
                 raise PermissionDenied("Business not found with the provided ID")
             
             # Check if the requesting user is an owner, manager, or staff member of the business
@@ -25,5 +25,3 @@ class CanViewProductsPermission(BasePermission):
                 raise PermissionDenied("You do not have permission to view products for this business")
         else:
             raise PermissionDenied("Business ID is required to view products")
-
-        return False  # Return False if business_id is not provided

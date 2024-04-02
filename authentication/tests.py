@@ -1,12 +1,8 @@
 from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
 from rest_framework import status
-from django.contrib.auth.models import User
+from authentication.models import User
 from django.urls import reverse
-from rest_framework.views import APIView
-from rest_framework import permissions
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserLoginSerializer, UserRegistrationSerializer
 
 
 class UserLoginTestCase(APITestCase):

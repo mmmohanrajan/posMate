@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import Product, Variant
+from .models import Product, Variant, Category
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('id', 'name')  # Fields to include in the serialized Category data
+
 
 class VariantSerializer(serializers.ModelSerializer):
     class Meta:
@@ -7,6 +14,7 @@ class VariantSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)  # Nested serializer for Category
     variants = VariantSerializer(many=True, read_only=True)  # Serializer for variants
 
     class Meta:

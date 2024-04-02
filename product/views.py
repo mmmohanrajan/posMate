@@ -5,8 +5,7 @@ import pandas as pd
 from product.permissions import CanViewProductsPermission
 
 from product.serializers import ProductSerializer
-
-from .models import Product, Variant
+from .models import Category, Product, Variant
 
 
 class ProductListAPIView(APIView):
@@ -21,10 +20,13 @@ class ProductListAPIView(APIView):
         products = Product.objects.filter(business_id=business_id)
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
-    
+
 
 class BulkUploadAPI(APIView):
+    permission_classes = [CanViewProductsPermission]
+
     def post(self, request, format=None):
+        # Get the business ID from the request data
         business_id = request.data.get('business')
 
         # Get the uploaded Excel file
@@ -42,32 +44,25 @@ class BulkUploadAPI(APIView):
             products_df = pd.read_excel(file, sheet_name='product')
             variants_df = pd.read_excel(file, sheet_name='product_variant')
 
-            # Replace variations of "no" and "yes" with boolean values
-            products_df.replace({'no\s*': False, 'yes\s*': True}, regex=True, inplace=True)
-            variants_df.replace({'no\s*': False, 'yes\s*': True}, regex=True, inplace=True)
-
             # Replace NaN values with empty strings
             products_df.fillna('', inplace=True)
             variants_df.fillna('', inplace=True)
 
-            # Bulk create products
-            # products_data = products_df.to_dict(orient='records')
-            # Product.objects.bulk_create([Product(**data, business_id=business_id) for data in products_data])
-
+            # processing Products
             for index, row in products_df.iterrows():
+                category_name = row.pop('category')
+                category, _ = Category.objects.get_or_create(name=category_name)
                 try:
                     product = Product.objects.get(id=row['id'])
                     for field in row.index:
                         setattr(product, field, row[field])
                     product.save()
                 except Product.DoesNotExist:
-                    Product.objects.create(**row, business_id=business_id)
+                    Product.objects.create(**row, category=category, business_id=business_id)
                 except Exception as e:
                     print(f"Error processing product row {index}: {e}")
-
-            # Bulk create variants
-            # variants_data = variants_df.to_dict(orient='records')
-            # Variant.objects.bulk_create([Variant(**data) for data in variants_data])
+            
+            # processing Product Variants
             for index, row in variants_df.iterrows():
                 try:
                     variant = Variant.objects.get(variant_id=row['variant_id'])
@@ -81,4 +76,5 @@ class BulkUploadAPI(APIView):
 
             return Response({'message': 'Products and variants uploaded successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
+            print("ERROR >>> ", e)
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

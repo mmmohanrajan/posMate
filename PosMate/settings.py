@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-k+73*rn(&3anom9=sq21lmf^o6c-z=t+87$hz$_80v$r2=1oee
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['moonbite.pythonanywhere.com']
+ALLOWED_HOSTS = ['moonbite.pythonanywhere.com', 'localhost']
 
 
 # Application definition
@@ -45,7 +45,8 @@ INSTALLED_APPS = [
 
     'authentication',
     'core',
-    'product'
+    'product',
+    'order'
 ]
 
 MIDDLEWARE = [
@@ -165,3 +166,5 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=3000),  # Adjust as needed
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Adjust as needed
 }
+
+AUTH_USER_MODEL = 'authentication.User'
