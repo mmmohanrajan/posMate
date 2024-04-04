@@ -31,3 +31,14 @@ class OrderItemSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Order count cannot be zero")
 
         return attrs
+    
+
+class OrderSerializer(serializers.ModelSerializer):
+    items_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+    def get_items_count(self, obj):
+        return obj.items.count()

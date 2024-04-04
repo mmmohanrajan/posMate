@@ -25,15 +25,16 @@ class Expense(models.Model):
         (UPI, 'UPI'),
     ]
 
+    name = models.CharField(max_length=255)
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="expense")
-    user = models.ForeignKey('authentication.User', on_delete=models.CASCADE, null=True, blank=True)  # ForeignKey to User model
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    notes = models.TextField(blank=True)
-    payment = models.CharField(max_length=255, choices=PAYMENT_CHOICES, default=CASH)
-    datetime = models.DateTimeField(default=timezone.now)
+    qty = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_type = models.CharField(max_length=255, choices=PAYMENT_CHOICES, default=CASH)
+    created_by = models.ForeignKey('authentication.User', on_delete=models.CASCADE, null=True, blank=True)  # ForeignKey to User model
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        if self.user:
-            return f"Expense for {self.business.name} - {self.amount} by {self.user.username}"
+        if self.created_by:
+            return f"Expense for {self.business.name} - {self.amount} by {self.created_by.username}"
         else:
             return f"Expense for {self.business.name} - {self.amount}"

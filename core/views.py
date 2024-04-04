@@ -1,16 +1,21 @@
 from rest_framework import viewsets, permissions
+
+from order.models import Order
+from order.serializers import OrderSerializer
 from .models import Expense
 import csv
 from datetime import datetime
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import ExpenseSerializer
-from .permissions import CanCreateExpenseForBusiness, IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly
+from rest_framework.decorators import action
+
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     queryset = Expense.objects.all()
     serializer_class = ExpenseSerializer
-    permission_classes = [permissions.IsAuthenticated, CanCreateExpenseForBusiness]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -18,7 +23,12 @@ class ExpenseViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        datetime_value = self.request.data.get('datetime')
+        if datetime_value:
+            serializer.save(created_by=self.request.user, business=self.request.user.business, created_at=datetime_value)
+        else:
+            serializer.save(created_by=self.request.user, business=self.request.user.business)
+
 
 
 class BulkExpenseUploadAPIView(APIView):
@@ -73,3 +83,23 @@ class BulkExpenseUploadAPIView(APIView):
 
         except Exception as e:
             return Response({'error': str(e)}, status=400)
+        
+
+class TransactionView(APIView):
+    def get(self, request):
+        start_time = request.query_params.get('start_time')
+        end_time = request.query_params.get('end_time')
+
+        if not start_time or not end_time:
+            return Response({'error': 'Both start_time and end_time parameters are required'}, status=400)
+
+        start_datetime = datetime.fromisoformat(start_time)
+        end_datetime = datetime.fromisoformat(end_time)
+
+        orders = Order.objects.filter(executed_at__gte=start_datetime, executed_at__lte=end_datetime)
+        expenses = Expense.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime)
+
+        order_serializer = OrderSerializer(orders, many=True)
+        expense_serializer = ExpenseSerializer(expenses, many=True)
+
+        return Response({'orders': order_serializer.data, 'expenses': expense_serializer.data})
