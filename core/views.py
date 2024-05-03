@@ -4,7 +4,7 @@ from order.models import Order
 from order.serializers import OrderSerializer
 from .models import Expense
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import ExpenseSerializer
@@ -96,8 +96,9 @@ class TransactionView(APIView):
         start_datetime = datetime.fromisoformat(start_time)
         end_datetime = datetime.fromisoformat(end_time)
 
-        orders = Order.objects.filter(executed_at__gte=start_datetime, executed_at__lte=end_datetime)
-        expenses = Expense.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime)
+        # added addition one day since end date should be 2024-05-03 00:00:00
+        orders = Order.objects.filter(executed_at__gte=start_datetime, executed_at__lte=end_datetime + timedelta(days=1))
+        expenses = Expense.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime + timedelta(days=1))
 
         order_serializer = OrderSerializer(orders, many=True)
         expense_serializer = ExpenseSerializer(expenses, many=True)
