@@ -11,7 +11,7 @@ class TopProductsAPIView(generics.ListAPIView):
     def get_queryset(self):
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
-        top = self.request.query_params.get('top') or 10
+        top = self.request.query_params.get('top') or 1000
         sort_by = self.request.query_params.get('sort') or "price"
 
         if not start_date or not end_date:

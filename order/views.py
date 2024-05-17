@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Order, OrderItem, Variant
+from django.utils import timezone
 
 
 class OrderAPIView(APIView):
@@ -11,10 +12,12 @@ class OrderAPIView(APIView):
         total_price = payload.get('total_price')
         
         order = Order.objects.create(
+            id=Order.generate_order_id(),
             business=request.user.business,
             total_price=total_price,
             status=Order.COMPLETED,
-            created_by=request.user
+            created_by=request.user,
+            executed_at=timezone.now()
         )
         order.save()
         

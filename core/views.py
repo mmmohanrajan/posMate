@@ -1,15 +1,21 @@
+from django.forms import ValidationError
+from django.db import transaction as db_transaction
 from rest_framework import viewsets, permissions
+from django.utils import timezone
 
-from order.models import Order
+from order.models import Order, OrderItem
 from order.serializers import OrderSerializer
+from product.models import Variant
 from .models import Expense
 import csv
+import pandas as pd
 from datetime import datetime, timedelta
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import ExpenseSerializer
 from .permissions import IsOwnerOrReadOnly
 from rest_framework.decorators import action
+from rest_framework import status
 
 
 class ExpenseViewSet(viewsets.ModelViewSet):
@@ -83,7 +89,7 @@ class BulkExpenseUploadAPIView(APIView):
 
         except Exception as e:
             return Response({'error': str(e)}, status=400)
-        
+
 
 class TransactionView(APIView):
     def get(self, request):
@@ -104,3 +110,77 @@ class TransactionView(APIView):
         expense_serializer = ExpenseSerializer(expenses, many=True)
 
         return Response({'orders': order_serializer.data, 'expenses': expense_serializer.data})
+
+
+class RevenueFileUploadAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get('file')
+
+        if not file:
+            return Response({'error': 'File should be uploaded to process the request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if file is an Excel file
+        if not file.name.endswith('.xlsx'):
+            return Response({'error': 'Please upload a valid Excel file'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            products_df = pd.read_excel(file, sheet_name='Product')
+            transactions_df = pd.read_excel(file, sheet_name='Transaction')
+
+            # Replace NaN values with empty strings
+            products_df.fillna('', inplace=True)
+            transactions_df.fillna('', inplace=True)
+
+            # Convert DataFrames to dictionaries
+            products_data = products_df.to_dict(orient='records')
+            transactions_data = transactions_df.to_dict(orient='records')
+
+            self.create_orders_and_items(transactions_data, products_data)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'message': 'Revenue file uploaded successfully'}, status=status.HTTP_201_CREATED)
+
+
+    def create_orders_and_items(self, transaction_data, products_data):
+        with db_transaction.atomic():
+            for transaction in transaction_data:
+                invoice_number = transaction['Invoice Number']
+                product_data_list = [product for product in products_data if product['Invoice Number'] == invoice_number]
+                payment_type = Order.UNSETTLED if transaction.get('Status') == "Unsettled" else Order.CASH
+
+                total_price = transaction['Grand Total']
+                executed_at = datetime.strptime(transaction['Date'], '%Y-%m-%d %H:%M:%S')
+                executed_at = timezone.make_aware(executed_at)
+                order = Order(
+                    id=invoice_number,
+                    business=self.request.user.business,
+                    status=Order.COMPLETED,
+                    total_price=total_price,
+                    executed_at=executed_at,
+                    payment_type=payment_type
+                )
+                order.save()
+
+                # Create Order Items
+                for product_data in product_data_list:
+                    sku = product_data['SKU']
+                    if '-' in sku:
+                        variant_id = sku
+                        try:
+                            variant = Variant.objects.get(variant_id=variant_id)
+                            product_id = variant.product_id
+                        except Variant.DoesNotExist:
+                            raise ValidationError("Invalid variant Id: " + variant_id)
+                    else:
+                        product_id = sku
+                        variant = None
+
+                    order_item = OrderItem(
+                        order=order,
+                        product_id=product_id,
+                        variant=variant,
+                        sales_price=product_data['Sales Price'],
+                        quantity=product_data['Qty'],
+                    )
+                    order_item.save()
